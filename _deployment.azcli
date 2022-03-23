@@ -1,0 +1,71 @@
+az cloud set --name AzureCloud #AzureUSGovernment
+
+az login --only-show-errors -o table --query Dummy
+az account set -s AzIntConsumption
+
+
+az group create --name AKSOSM --location eastus2
+# az group delete --name AKSOSM --yes --no-wait
+
+az aks create `
+    --resource-group AKSOSM `
+    --name myAKSCluster `
+    --enable-addons open-service-mesh
+
+az aks get-credentials --resource-group AKSOSM --name myAKSCluster
+
+az aks show --resource-group AKSOSM --name myAKSCluster  --query 'addonProfiles.openServiceMesh.enabled'
+
+kubectl get deployment -n kube-system osm-controller -o=jsonpath='{$.spec.template.spec.containers[:1].image}'
+
+kubectl get nodes
+
+kubectl get deployments -n kube-system --selector app.kubernetes.io/name=openservicemesh.io
+kubectl get pods -n kube-system --selector app.kubernetes.io/name=openservicemesh.io
+kubectl get services -n kube-system --selector app.kubernetes.io/name=openservicemesh.io
+
+kubectl get meshconfig osm-mesh-config -n kube-system -o yaml
+
+git cone https://github.com/openservicemesh/osm.git
+
+osm version 
+
+cd C:\Bicep\AKS_OSM\osm
+
+# https://release-v1-0.docs.openservicemesh.io/docs/getting_started/install_apps/
+# will review only:
+# Configure Traffic Ppolicies 
+# Configure Traffic Split
+
+kubectl create namespace bookstore
+kubectl create namespace bookbuyer
+kubectl create namespace bookthief
+kubectl create namespace bookwarehouse
+
+kubectl get namespace
+kubectl describe ns bookbuyer
+
+# Install OSM
+# wget  https://github.com/openservicemesh/osm/releases/download/v1.0.0/osm-v1.0.0-windows-amd64.zip -o osm.zip
+# unzip osm.zip
+# .\osm.exe version
+
+.\osm.exe namespace add bookstore bookbuyer bookthief bookwarehouse
+
+kubectl describe ns bookbuyer
+
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/apps/bookbuyer.yaml
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/apps/bookthief.yaml
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/apps/bookstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/apps/bookwarehouse.yaml
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/apps/mysql.yaml
+
+
+kubectl get pods, deployments, serviceaccounts -n bookbuyer
+kubectl get pods, deployments, serviceaccounts -n bookthief
+
+kubectl get pods, deployments, serviceaccounts, services, endpoints -n bookstore
+kubectl get pods, deployments, serviceaccounts, services, endpoints -n bookwarehouse
+
+cp .env.example .env
+./scripts/port-forward-all.sh
