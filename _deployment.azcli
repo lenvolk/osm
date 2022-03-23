@@ -1,16 +1,27 @@
+
 az cloud set --name AzureCloud #AzureUSGovernment
 
 az login --only-show-errors -o table --query Dummy
 az account set -s AzIntConsumption
 
+# install osm
+system=$(uname -s)
+release=v1.0.0
+curl -L https://github.com/openservicemesh/osm/releases/download/${release}/osm-${release}-${system}-amd64.tar.gz | tar -vxzf -
+./${system}-amd64/osm version
+
 
 az group create --name AKSOSM --location eastus2
 # az group delete --name AKSOSM --yes --no-wait
 
-az aks create `
-    --resource-group AKSOSM `
-    --name myAKSCluster `
-    --enable-addons open-service-mesh
+az provider register --namespace Microsoft.KubernetesConfiguration
+az provider register --namespace Microsoft.ContainerService
+az extension add --name k8s-extension
+
+az aks create \
+  --resource-group AKSOSM \
+  --name myAKSCluster \
+  --enable-addons open-service-mesh
 
 az aks get-credentials --resource-group AKSOSM --name myAKSCluster
 
