@@ -61,7 +61,7 @@ kubectl describe ns bookbuyer
 # unzip osm.zip
 # .\osm.exe version
 
-.\osm.exe namespace add bookstore bookbuyer bookthief bookwarehouse
+./osm namespace add bookstore bookbuyer bookthief bookwarehouse
 
 kubectl describe ns bookbuyer
 
@@ -72,11 +72,53 @@ kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/rele
 kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/apps/mysql.yaml
 
 
-kubectl get pods, deployments, serviceaccounts -n bookbuyer
-kubectl get pods, deployments, serviceaccounts -n bookthief
+kubectl get pods,deployments,serviceaccounts -n bookbuyer
+kubectl get pods,deployments,serviceaccounts -n bookthief
 
-kubectl get pods, deployments, serviceaccounts, services, endpoints -n bookstore
-kubectl get pods, deployments, serviceaccounts, services, endpoints -n bookwarehouse
+kubectl get pods,deployments,serviceaccounts,services,endpoints -n bookstore
+kubectl get pods,deployments,serviceaccounts,services,endpoints -n bookwarehouse
 
 cp .env.example .env
 ./scripts/port-forward-all.sh
+#
+# Second Part Configure Traffic Polices 
+#
+kubectl get meshconfig osm-mesh-config -n kube-system -o jsonpath='{.spec.traffic.enablePermissiveTrafficPolicyMode}{"\n"}'
+
+# osm install --set=osm.enablePermissiveTrafficPolicy=true
+
+kubectl patch meshconfig osm-mesh-config -n kube-system -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":true}}}'  --type=merge
+
+kubectl patch meshconfig osm-mesh-config -n kube-system -p '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":false}}}'  --type=merge
+
+#Deploy SMI Access Control Policies 
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/access/traffic-access-v1.yaml
+
+### Configure Traffic Split
+
+# Contains the bookstore-v2 Kubernetes Service, Service Account, Deployment and SMI Traffic Target resource to allow
+# `bookbuyer` to communicate with `bookstore-v2` pods
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/apps/bookstore-v2.yaml
+
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/split/traffic-split-v1.yaml
+
+kubectl describe trafficsplit bookstore-split -n bookstore
+#Split Traffic to Bookstore v2
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/split/traffic-split-50-50.yaml
+#Split All Traffic to Bookstore v2
+kubectl apply -f https://raw.githubusercontent.com/openservicemesh/osm-docs/release-v1.0/manifests/split/traffic-split-v2.yaml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
